@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>新川 ごみ出しカレンダー</title>
+<style>
+:root{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Yu Gothic",Meiryo,sans-serif;color:#202938;background:#f3f6f8; -webkit-text-size-adjust:100%}
+*{box-sizing:border-box}
+body{margin:0;padding:env(safe-area-inset-top) 12px env(safe-area-inset-bottom);padding-top:max(12px,env(safe-area-inset-top))}
+main{max-width:1050px;margin:0 auto}
+header{background:#176b55;color:#fff;padding:18px 16px;border-radius:14px;margin:0 0 12px}
+h1{margin:0 0 5px;font-size:clamp(1.25rem,5vw,2rem);line-height:1.35}
+header p{margin:0;font-size:.9rem;line-height:1.5;opacity:.96}
+.controls{display:grid;grid-template-columns:1fr 1fr;gap:10px;background:#fff;border:1px solid #dce4ed;border-radius:12px;padding:12px;margin:12px 0}
+label{display:flex;flex-direction:column;gap:5px;font-size:.88rem;font-weight:700}
+select,input,button{font:inherit;font-size:16px;min-height:44px;padding:9px 10px;border:1px solid #bac7d5;border-radius:9px;background:#fff;color:#202938;width:100%}
+button{cursor:pointer;background:#176b55;color:#fff;border-color:#176b55;font-weight:750}
+button.secondary{background:#fff;color:#176b55}
+#prev,#next{grid-row:auto}
+#prev{grid-column:1}#next{grid-column:2}
+#print{grid-column:1 / -1}
+.legend{display:flex;gap:5px;flex-wrap:wrap;background:#fff;border:1px solid #dce4ed;border-radius:12px;padding:10px;margin:12px 0}
+.tag{display:inline-block;padding:4px 7px;border-radius:6px;font-size:.78rem;line-height:1.35;margin:2px 2px 2px 0;font-weight:700;overflow-wrap:anywhere}
+.calendar{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px}
+.weekday{text-align:center;padding:7px 1px;font-size:.8rem;font-weight:800;background:#e5ebf2;border-radius:6px}
+.day{background:#fff;border:1px solid #dce4ed;border-radius:7px;min-height:82px;padding:4px 3px;overflow-wrap:anywhere;min-width:0}
+.day.empty{background:transparent;border-color:transparent}
+.day.today{outline:2px solid #176b55;outline-offset:-2px}
+.date{font-weight:850;font-size:.88rem;margin-bottom:4px}
+.sun .date{color:#c0392b}.sat .date{color:#2463a6}
+.tag.burn{background:#ffe3d6;color:#8d3416}.tag.nonburn{background:#e8e2ff;color:#4b3290}
+.tag.grass{background:#e1f5d7;color:#28651c}.tag.paper{background:#fff0bd;color:#745300}
+.tag.cans{background:#d8efff;color:#075b8b}.tag.pet{background:#d8f5ef;color:#08675c}
+.tag.hazard{background:#ffdce5;color:#9d2445}.tag.bulky{background:#eceff3;color:#424d5b}
+.notice{background:#fff;border:1px solid #dce4ed;border-radius:12px;padding:13px;margin:14px 0 20px;font-size:.92rem;line-height:1.65}
+.notice p{margin:7px 0}
+.small{font-size:.8rem;color:#596579}
+.mobile-hint{font-size:.82rem;color:#596579;margin:6px 2px}
+@media(min-width:650px){
+ body{padding:20px}
+ header{padding:22px}
+ .controls{display:flex;align-items:end}
+ .controls label{min-width:115px}
+ .controls button{width:auto}
+ #print{margin-left:auto}
+ .calendar{gap:5px}
+ .day{min-height:115px;padding:7px}
+ .date{font-size:1.05rem}
+ .tag{font-size:.82rem;padding:4px 8px}
+ .weekday{font-size:1rem}
+}
+@media(max-width:360px){
+ body{padding-left:7px;padding-right:7px}
+ .calendar{gap:2px}
+ .day{padding:3px 2px;min-height:74px}
+ .date{font-size:.8rem}
+ .tag{font-size:.68rem;padding:3px 2px;margin:1px 0}
+ .weekday{font-size:.72rem}
+}
+@media print{
+ body{background:#fff;padding:0}
+ .controls,.mobile-hint,button{display:none!important}
+ .day{min-height:85px;break-inside:avoid}
+ .calendar{gap:3px}
+ header{background:#fff;color:#111;border:1px solid #aaa;padding:10px}
+ .legend,.notice{border:1px solid #aaa}
+}
+</style>
+</head>
+<body>
+<main>
+<header>
+  <h1>新川 ごみ出しカレンダー</h1>
+  <p>沖縄県南風原町・新川（A区域）｜月ごとの収集日を自動表示</p>
+</header>
+<section class="controls">
+  <label>年 <select id="year"></select></label>
+  <label>月 <select id="month"></select></label>
+  <button id="prev" class="secondary">◀ 前月</button>
+  <button id="next" class="secondary">翌月 ▶</button>
+  <button id="print">印刷 / PDF保存</button>
+</section>
+<section class="legend" id="legend"></section>
+<p class="mobile-hint">日付を確認して、色付きのラベルで収集するゴミをチェックできます。</p>
+<div id="calendar" class="calendar" aria-label="ごみ出しカレンダー"></div>
+<section class="notice">
+  <strong>利用上の注意</strong>
+  <p>このカレンダーは、南風原町の地域別ごみ収集曜日一覧にある「A区域（大名・新川・北丘ハイツ・東新川）」の曜日をもとに表示します。祝日・年末年始・台風等による臨時変更は自動反映しません。粗大ごみは予約が必要です。出す前に町の最新案内をご確認ください。</p>
+  <p class="small">指定日の朝8時までに、決められた場所へ出してください。曜日の設定を変更する場合は、HTML内の SCHEDULE を編集してください。</p>
+</section>
+</main>
+<script>
+// 南風原町「地域別ごみ収集曜日一覧」A区域を初期設定。
+// weekday: 日=0, 月=1, 火=2, 水=3, 木=4, 金=5, 土=6
+// nthWed は月内の第1・3・5水曜日などを表します。
+const SCHEDULE = [
+  {key:"burn", label:"もやすごみ", color:"burn", weekdays:[1,4]},
+  {key:"nonburn", label:"もやさないごみ", color:"nonburn", nthWed:[2,4]},
+  {key:"grass", label:"草木類", color:"grass", nthWed:[1,3,5]},
+  {key:"paper", label:"紙・布類", color:"paper", weekdays:[1]},
+  {key:"cans", label:"かん・びん", color:"cans", weekdays:[3]},
+  {key:"pet", label:"ペットボトル", color:"pet", weekdays:[4]},
+  {key:"hazard", label:"有害・危険ごみ", color:"hazard", weekdays:[3]},
+  {key:"bulky", label:"粗大ごみ（要予約）", color:"bulky", weekdays:[3,5], appointment:true}
+];
+const jpWeek = ["日","月","火","水","木","金","土"];
+const yearEl=document.getElementById("year"), monthEl=document.getElementById("month");
+const now=new Date();
+for(let y=now.getFullYear()-1;y<=now.getFullYear()+5;y++){
+  const o=document.createElement("option");o.value=y;o.textContent=y+"年";yearEl.appendChild(o);
+}
+for(let m=1;m<=12;m++){
+  const o=document.createElement("option");o.value=m;o.textContent=m+"月";monthEl.appendChild(o);
+}
+yearEl.value=now.getFullYear();monthEl.value=now.getMonth()+1;
+document.getElementById("legend").innerHTML=SCHEDULE.map(s=>`<span class="tag ${s.color}">${s.label}</span>`).join("");
+function nthOfMonth(date){return Math.floor((date.getDate()-1)/7)+1}
+function scheduled(s,date){
+  if(s.weekdays && s.weekdays.includes(date.getDay())) return true;
+  if(s.nthWed && date.getDay()===3 && s.nthWed.includes(nthOfMonth(date))) return true;
+  return false;
+}
+function render(){
+  const y=+yearEl.value,m=+monthEl.value;
+  document.querySelector("header p").textContent=`沖縄県南風原町・新川（A区域）｜${y}年${m}月`;
+  const first=new Date(y,m-1,1), lastDay=new Date(y,m,0).getDate();
+  const cal=document.getElementById("calendar");cal.innerHTML="";
+  jpWeek.forEach((w,i)=>{const d=document.createElement("div");d.className="weekday";d.textContent=w曜日(i);cal.appendChild(d)});
+  for(let i=0;i<first.getDay();i++){const e=document.createElement("div");e.className="day empty";cal.appendChild(e)}
+  for(let day=1;day<=lastDay;day++){
+    const date=new Date(y,m-1,day), cell=document.createElement("div");
+    cell.className="day "+(date.getDay()===0?"sun ":date.getDay()===6?"sat ":"");
+    if(date.toDateString()===now.toDateString())cell.classList.add("today");
+    const num=document.createElement("div");num.className="date";num.textContent=day+"日";cell.appendChild(num);
+    SCHEDULE.forEach(s=>{
+      if(scheduled(s,date)){
+        const tag=document.createElement("div");tag.className="tag "+s.color;
+        tag.textContent=s.label; if(s.appointment)tag.title="粗大ごみは事前予約が必要です";
+        cell.appendChild(tag);
+      }
+    });
+    cal.appendChild(cell);
+  }
+}
+function w曜日(i){return jpWeek[i]}
+function shiftMonth(delta){
+  let y=+yearEl.value,m=+monthEl.value+delta;
+  if(m<1){m=12;y--} if(m>12){m=1;y++}
+  if(![...yearEl.options].some(o=>+o.value===y)){const o=document.createElement("option");o.value=y;o.textContent=y+"年";yearEl.appendChild(o)}
+  yearEl.value=y;monthEl.value=m;render();
+}
+yearEl.addEventListener("change",render);monthEl.addEventListener("change",render);
+document.getElementById("prev").addEventListener("click",()=>shiftMonth(-1));
+document.getElementById("next").addEventListener("click",()=>shiftMonth(1));
+document.getElementById("print").addEventListener("click",()=>window.print());
+render();
+</script>
+</body>
+</html>
